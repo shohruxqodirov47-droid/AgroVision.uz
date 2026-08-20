@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="uz" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - AgroVision AI</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-stone-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+  <!-- NAVBAR -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between overflow-x-auto">
+      <!-- Logo -->
+      <a href="{{ url_for('index') }}" class="flex items-center gap-3 group whitespace-nowrap pr-4">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-500 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+          <i class="fa-solid fa-shield-halved text-xl"></i>
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
+            Admin <span class="text-brand-500">Panel</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Auth Menu -->
+      <div class="flex items-center gap-3 whitespace-nowrap pl-4">
+        <a href="{{ url_for('index') }}" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all flex items-center gap-2">
+          <i class="fa-solid fa-house"></i>
+          <span class="hidden sm:inline">Saytga qaytish</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="flex-1 pt-32 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 pb-6 border-b border-stone-200 gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-slate-900 flex items-center gap-3">
+          <i class="fa-solid fa-chart-pie text-brand-500"></i> Boshqaruv Markazi
+        </h1>
+        <p class="text-slate-500 mt-2 font-medium">Saytning umumiy statistikasi va ma'lumotlari</p>
+      </div>
+    </div>
+
+    <!-- KPI Widgets -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div class="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-500 flex items-center justify-center text-2xl">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        <div>
+          <div class="text-sm font-bold text-slate-500 uppercase">Jami Fermerlar</div>
+          <div class="text-3xl font-black text-slate-900">{{ total_users }}</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-2xl">
+          <i class="fa-solid fa-microscope"></i>
+        </div>
+        <div>
+          <div class="text-sm font-bold text-slate-500 uppercase">Jami Tahlillar</div>
+          <div class="text-3xl font-black text-slate-900">{{ total_scans }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- Users Table -->
+      <div class="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-stone-100 bg-stone-50">
+          <h3 class="font-extrabold text-lg text-slate-900">Yangi Foydalanuvchilar</h3>
+        </div>
+        <div class="p-0 overflow-x-auto">
+          <table class="w-full text-left min-w-[400px]">
+            <thead class="bg-stone-50 text-slate-500 text-xs uppercase font-bold border-b border-stone-100">
+              <tr>
+                <th class="px-6 py-4">Ism</th>
+                <th class="px-6 py-4">Aloqa</th>
+                <th class="px-6 py-4">Viloyat</th>
+                <th class="px-6 py-4">Huquq</th>
+                <th class="px-6 py-4">Tarif</th>
+                <th class="px-6 py-4 text-right">Boshqarish</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-stone-100 text-sm font-medium text-slate-700">
+              {% for u in recent_users %}
+              <tr class="hover:bg-stone-50 transition-colors">
+                <td class="px-6 py-4">{{ u.name }}</td>
+                <td class="px-6 py-4">
+                  <div>{{ u.email }}</div>
+                  <div class="text-xs text-slate-500">{{ u.phone or '-' }}</div>
+                </td>
+                <td class="px-6 py-4">{{ u.region or '-' }}</td>
+                <td class="px-6 py-4">
+                  {% if u.id == 1 %}
+                    <span class="px-2 py-1 rounded bg-rose-100 text-rose-700 text-xs font-bold">Admin</span>
+                  {% else %}
+                    <span class="px-2 py-1 rounded bg-stone-100 text-stone-600 text-xs font-bold">User</span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4">
+                  {% if u.subscription_tier == 'Premium' %}
+                    <span class="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs font-bold">Premium</span>
+                  {% elif u.subscription_tier == 'Business' %}
+                    <span class="px-2 py-1 rounded bg-slate-800 text-slate-200 text-xs font-bold">Biznes</span>
+                  {% else %}
+                    <span class="px-2 py-1 rounded bg-stone-100 text-slate-500 text-xs font-bold">Free</span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <form action="{{ url_for('admin_upgrade', user_id=u.id) }}" method="POST" class="flex items-center justify-end gap-2">
+                    <select name="tier" class="text-xs border border-stone-200 rounded px-2 py-1 bg-stone-50 outline-none">
+                      <option value="Free" {% if u.subscription_tier == 'Free' %}selected{% endif %}>Free</option>
+                      <option value="Premium" {% if u.subscription_tier == 'Premium' %}selected{% endif %}>Premium</option>
+                      <option value="Business" {% if u.subscription_tier == 'Business' %}selected{% endif %}>Biznes</option>
+                    </select>
+                    <button type="submit" class="px-3 py-1 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded transition-colors">Saqlash</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Scans Table -->
+      <div class="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-stone-100 bg-stone-50">
+          <h3 class="font-extrabold text-lg text-slate-900">Oxirgi Tahlillar</h3>
+        </div>
+        <div class="p-0 overflow-x-auto">
+          <table class="w-full text-left min-w-[500px]">
+            <thead class="bg-stone-50 text-slate-500 text-xs uppercase font-bold border-b border-stone-100">
+              <tr>
+                <th class="px-6 py-4">Fermer</th>
+                <th class="px-6 py-4">Ekin & Kasallik</th>
+                <th class="px-6 py-4">Xavf</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-stone-100 text-sm font-medium text-slate-700">
+              {% for scan in recent_scans %}
+              <tr class="hover:bg-stone-50 transition-colors">
+                <td class="px-6 py-4 font-bold text-brand-600">{{ scan.author.name }}</td>
+                <td class="px-6 py-4">
+                  <div class="font-bold">{{ scan.crop_name }}</div>
+                  <div class="text-xs text-slate-500">{{ scan.diagnosis | truncate(40) }}</div>
+                </td>
+                <td class="px-6 py-4">
+                  {% if "YUQORI" in scan.risk_level.upper() %}
+                    <span class="text-rose-600 font-extrabold text-xs">{{ scan.risk_level }}</span>
+                  {% elif "PAST" in scan.risk_level.upper() %}
+                    <span class="text-emerald-600 font-extrabold text-xs">{{ scan.risk_level }}</span>
+                  {% else %}
+                    <span class="text-amber-600 font-extrabold text-xs">{{ scan.risk_level }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bozor Narxlari Manual Table -->
+    <div class="mt-8 bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col">
+      <div class="p-6 border-b border-stone-100 bg-stone-50 flex justify-between items-center">
+        <h3 class="font-extrabold text-lg text-slate-900"><i class="fa-solid fa-chart-line text-emerald-500 mr-2"></i> Bozor Narxlari (Manual Boshqaruv)</h3>
+      </div>
+      <div class="p-0 overflow-x-auto">
+        <table class="w-full text-left min-w-[500px]">
+          <thead class="bg-stone-50 text-slate-500 text-xs uppercase font-bold border-b border-stone-100">
+            <tr>
+              <th class="px-6 py-4">Mahsulot</th>
+              <th class="px-6 py-4">Narxi (So'm)</th>
+              <th class="px-6 py-4">O'zgarish (%)</th>
+              <th class="px-6 py-4">Holati</th>
+              <th class="px-6 py-4 text-right">Amal</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-stone-100 text-sm font-medium text-slate-700">
+            {% for mp in market_prices %}
+            <tr class="hover:bg-stone-50 transition-colors">
+              <td class="px-6 py-4 font-bold text-slate-800 text-base">
+                {{ mp.emoji }} {{ mp.product_name }}
+              </td>
+              <td class="px-6 py-4" colspan="4">
+                <form action="{{ url_for('admin_market_update', price_id=mp.id) }}" method="POST" class="flex items-center gap-4 justify-between w-full">
+                  <div class="flex items-center gap-4 flex-1">
+                    <input type="number" name="price" value="{{ mp.price }}" class="w-28 px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-slate-700 focus:border-brand-500 outline-none" required>
+                    <input type="number" step="0.1" name="trend_percent" value="{{ mp.trend_percent }}" class="w-20 px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-slate-700 focus:border-brand-500 outline-none" required>
+                    <select name="is_up" class="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-slate-700 focus:border-brand-500 outline-none">
+                      <option value="true" {% if mp.is_up %}selected{% endif %}>Ko'tarildi 📈</option>
+                      <option value="false" {% if not mp.is_up %}selected{% endif %}>Tushdi 📉</option>
+                    </select>
+                  </div>
+                  <button type="submit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors flex-shrink-0">
+                    Yangilash
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="px-6 py-8 text-center text-slate-500">
+                Bozor narxlari hali kiritilmagan. Avval AI orqali 1-marta sinxronlang!
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</body>
+</html>

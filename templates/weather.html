@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="uz" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agro Ob-Havo (Tumanlar) - AgroVision</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-stone-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+  <!-- Region Search Modal -->
+  <div id="region-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 sm:p-8 transform scale-95 transition-all" id="modal-content">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-900">Hududni aniqlash</h2>
+          <p class="text-slate-500 font-medium text-sm mt-1">Sizga eng aniq va real ob-havo ma'lumotini berishimiz uchun tumaningizni kiriting.</p>
+        </div>
+        <button onclick="closeRegionModal()" class="w-10 h-10 rounded-full bg-stone-100 text-slate-500 hover:bg-stone-200 flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <!-- GPS Auto Detect -->
+      <button onclick="detectLocation()" id="gps-btn" class="w-full py-4 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-600 rounded-2xl font-bold text-base transition-colors flex items-center justify-center gap-3 mb-6 shadow-sm">
+        <i class="fa-solid fa-location-crosshairs text-xl"></i>
+        <span>Hozirgi joylashuvimni aniqlash (GPS)</span>
+      </button>
+
+      <div class="flex items-center gap-4 mb-6">
+        <div class="h-px bg-stone-200 flex-1"></div>
+        <span class="text-xs font-bold text-stone-400 uppercase tracking-widest">YOKI QIDIRISH</span>
+        <div class="h-px bg-stone-200 flex-1"></div>
+      </div>
+      
+      <!-- Search Box -->
+      <div class="relative mb-4">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        <input type="text" id="search-input" oninput="searchCity(this.value)" placeholder="Tuman yoki shahar nomini yozing (Masalan: Chiroqchi, Urgut)..." class="w-full pl-11 pr-4 py-4 bg-stone-50 border border-stone-200 rounded-2xl text-slate-800 font-medium focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all outline-none" autocomplete="off">
+        <div id="search-spinner" class="absolute inset-y-0 right-0 pr-4 flex items-center text-brand-500 hidden">
+          <i class="fa-solid fa-spinner animate-spin"></i>
+        </div>
+      </div>
+
+      <!-- Search Results -->
+      <div id="search-results" class="max-h-60 overflow-y-auto custom-scrollbar flex flex-col gap-2">
+        <!-- Results appended here by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between overflow-x-auto no-scrollbar">
+      <a href="{{ url_for('index') }}" class="flex items-center gap-3 group flex-shrink-0">
+        <img src="{{ url_for('static', filename='img/logo.jpg') }}" alt="AgroVision AI Logo" class="w-10 h-10 object-contain group-hover:scale-105 transition-transform" />
+        <div>
+          <span class="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-1.5">
+            AgroVision <span class="text-brand-600">AI</span>
+          </span>
+        </div>
+      </a>
+      <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0 pl-4">
+        <span class="text-sm font-bold text-slate-700 hidden sm:block">Xush kelibsiz, <span class="text-brand-600">{{ user.name }}</span></span>
+        <a href="{{ url_for('index') }}" class="px-3 sm:px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-slate-700 font-bold text-sm transition-all flex items-center gap-2">
+          <i class="fa-solid fa-house"></i>
+          <span class="hidden sm:inline">Bosh sahifa</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="flex-1 pt-32 pb-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+    
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 border-b border-stone-200 pb-6 gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-slate-900 flex items-center gap-3">
+          <i class="fa-solid fa-cloud-sun-rain text-sky-500"></i> Agro Ob-Havo
+        </h1>
+        <p class="text-slate-500 mt-2 font-medium">Real vaqt rejimida qishloq xo'jaligi uchun iqlim ko'rsatkichlari</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="openRegionModal()" class="text-sm font-bold text-slate-700 bg-white border border-stone-200 hover:bg-stone-50 px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2">
+          <i class="fa-solid fa-location-dot text-brand-500"></i> <span id="current-region-name">Hududni tanlash</span>
+        </button>
+        <div id="status-indicator" class="text-xs font-bold text-slate-500 bg-white border border-stone-200 px-4 py-2 rounded-xl shadow-sm hidden">
+          <i class="fa-solid fa-spinner animate-spin mr-1"></i> Kutilyapti...
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="text-center py-20 hidden">
+      <div class="w-24 h-24 rounded-full bg-sky-50 text-sky-500 flex items-center justify-center text-5xl mx-auto mb-6">
+        <i class="fa-solid fa-earth-asia"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-slate-800 mb-2">Hali hudud tanlanmagan</h2>
+      <p class="text-slate-500 mb-6">Ob-havo va dehqonchilik ogohlantirishlarini ko'rish uchun avval o'z tumaningizni belgilang.</p>
+      <button onclick="openRegionModal()" class="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition-all">
+        Hududni tanlash
+      </button>
+    </div>
+
+    <div id="weather-content" class="hidden">
+      <!-- Main Weather Card -->
+      <div class="bg-gradient-to-br from-sky-400 to-indigo-500 p-8 sm:p-10 rounded-3xl shadow-xl shadow-sky-500/20 text-white relative overflow-hidden mb-8">
+        <div class="absolute -top-20 -right-20 text-9xl text-white/10">
+          <i class="fa-solid fa-cloud"></i>
+        </div>
+        <div class="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-8">
+          <div>
+            <h2 class="text-lg font-bold text-sky-100 uppercase tracking-widest mb-1">Hozirgi Harorat</h2>
+            <div class="flex items-start gap-2">
+              <span id="current-temp" class="text-7xl font-black tracking-tighter">--</span>
+              <span class="text-3xl font-bold mt-2">°C</span>
+            </div>
+            <p id="current-desc" class="text-xl font-medium text-sky-50 mt-2">Ma'lumot olinmoqda...</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 sm:gap-8 bg-white/10 p-6 rounded-2xl backdrop-blur-sm border border-white/20 w-full sm:w-auto">
+            <div>
+              <div class="text-sky-200 text-xs font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-droplet mr-1"></i> Namlik</div>
+              <div id="current-humidity" class="text-2xl font-black">--%</div>
+            </div>
+            <div>
+              <div class="text-sky-200 text-xs font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-wind mr-1"></i> Shamol</div>
+              <div id="current-wind" class="text-2xl font-black">-- km/s</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agro Alerts -->
+      <div id="agro-alert" class="bg-emerald-50 border border-emerald-200 p-6 rounded-3xl mb-8 flex items-start gap-4 shadow-sm">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl flex-shrink-0 mt-1">
+          <i class="fa-solid fa-shield-check"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-extrabold text-emerald-800">Ekinlar uchun xavf yo'q</h3>
+          <p id="alert-desc" class="text-sm text-emerald-600 font-medium mt-1">Hozirgi havo harorati va namlik darajasi aksariyat qishloq xo'jaligi ekinlari va dorilash ishlari uchun juda qulay. Dori sepish tavsiya etiladi.</p>
+        </div>
+      </div>
+
+      <h3 class="font-extrabold text-xl text-slate-900 mb-4 border-b border-stone-200 pb-2">Haftalik Prognoz (<span id="forecast-region" class="text-brand-600"></span>)</h3>
+      <!-- Forecast Grid -->
+      <div id="forecast-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f5f5f4; border-radius: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 8px; }
+  </style>
+
+  <script>
+    const modal = document.getElementById('region-modal');
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    let searchTimeout = null;
+
+    function openRegionModal() {
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        document.getElementById('modal-content').classList.remove('scale-95');
+        document.getElementById('modal-content').classList.add('scale-100');
+        searchInput.focus();
+      }, 10);
+    }
+
+    function closeRegionModal() {
+      document.getElementById('modal-content').classList.remove('scale-100');
+      document.getElementById('modal-content').classList.add('scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 200);
+    }
+
+    // Geocoding Search Logic
+    async function searchCity(query) {
+      if(query.length < 3) {
+        searchResults.innerHTML = '<div class="text-center p-4 text-stone-400 text-sm">Kamida 3 ta harf yozing...</div>';
+        return;
+      }
+      
+      clearTimeout(searchTimeout);
+      document.getElementById('search-spinner').classList.remove('hidden');
+      
+      searchTimeout = setTimeout(async () => {
+        try {
+          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=uz&format=json`);
+          const data = await res.json();
+          document.getElementById('search-spinner').classList.add('hidden');
+          
+          searchResults.innerHTML = '';
+          
+          if(data.results && data.results.length > 0) {
+            data.results.forEach(city => {
+              // Filter to show mostly Uzbekistan or Central Asia to be safe, but API is global.
+              const regionName = city.admin1 ? `, ${city.admin1}` : '';
+              const country = city.country || '';
+              
+              const btn = document.createElement('button');
+              btn.className = "w-full text-left p-4 rounded-xl bg-stone-50 border border-stone-200 hover:bg-brand-50 hover:border-brand-300 transition-colors flex items-center justify-between group";
+              btn.innerHTML = `
+                <div>
+                  <div class="font-bold text-slate-800 group-hover:text-brand-700">${city.name}</div>
+                  <div class="text-xs text-slate-500 font-medium">${country}${regionName}</div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-stone-300 group-hover:text-brand-500"></i>
+              `;
+              
+              btn.onclick = () => {
+                const regionObj = {
+                  id: city.id,
+                  name: city.name,
+                  lat: city.latitude,
+                  lon: city.longitude
+                };
+                saveAndFetch(regionObj);
+              };
+              searchResults.appendChild(btn);
+            });
+          } else {
+            searchResults.innerHTML = `<div class="text-center p-4 text-rose-500 font-medium text-sm">Hech narsa topilmadi. Boshqacha yozib ko'ring.</div>`;
+          }
+        } catch(e) {
+          document.getElementById('search-spinner').classList.add('hidden');
+          searchResults.innerHTML = `<div class="text-center p-4 text-rose-500 font-medium text-sm">Tarmoq xatosi. Qaytadan urinib ko'ring.</div>`;
+        }
+      }, 500); // 500ms debounce
+    }
+
+    // Auto Detect GPS Location
+    function detectLocation() {
+      const btn = document.getElementById('gps-btn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin text-xl"></i> <span>Joylashuv aniqlanmoqda...</span>';
+      
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            
+            // Reverse geocode to get city name
+            try {
+              const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=uz`);
+              const data = await res.json();
+              const name = data.city || data.locality || "Hozirgi joylashuvingiz";
+              
+              saveAndFetch({ id: 'gps', name: name, lat: lat, lon: lon });
+            } catch(e) {
+              // Fallback if reverse geocode fails
+              saveAndFetch({ id: 'gps', name: "Sizning hududingiz", lat: lat, lon: lon });
+            }
+            btn.innerHTML = originalText;
+          },
+          (error) => {
+            alert("Joylashuvni aniqlashga ruxsat berilmadi yoki xatolik yuz berdi. Iltimos, tumaningizni qidiruv orqali toping.");
+            btn.innerHTML = originalText;
+          }
+        );
+      } else {
+        alert("Brauzeringiz GPS funksiyasini qo'llab-quvvatlamaydi.");
+        btn.innerHTML = originalText;
+      }
+    }
+
+    function saveAndFetch(regionObj) {
+      localStorage.setItem('agro_weather_region', JSON.stringify(regionObj));
+      document.getElementById('current-region-name').textContent = regionObj.name;
+      document.getElementById('forecast-region').textContent = regionObj.name;
+      closeRegionModal();
+      document.getElementById('empty-state').classList.add('hidden');
+      fetchWeather(regionObj);
+    }
+
+    async function fetchWeather(region) {
+      const indicator = document.getElementById('status-indicator');
+      indicator.classList.remove('hidden');
+      indicator.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-1"></i> Yangilanmoqda...';
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${region.lat}&longitude=${region.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FTashkent`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        // Parse current
+        const current = data.current;
+        document.getElementById('current-temp').textContent = Math.round(current.temperature_2m);
+        document.getElementById('current-humidity').textContent = current.relative_humidity_2m + '%';
+        document.getElementById('current-wind').textContent = current.wind_speed_10m + ' km/s';
+        
+        const code = current.weather_code;
+        let desc = "Ochiq havo";
+        if(code > 0 && code <= 3) desc = "Qisman bulutli";
+        if(code >= 45 && code <= 48) desc = "Tuman";
+        if(code >= 51 && code <= 67) desc = "Yomg'ir";
+        if(code >= 71 && code <= 77) desc = "Qor";
+        if(code >= 95) desc = "Momaqaldiroq";
+        document.getElementById('current-desc').textContent = desc;
+
+        // Alerts logic
+        const alertBox = document.getElementById('agro-alert');
+        const alertDesc = document.getElementById('alert-desc');
+        const iconDiv = alertBox.querySelector('.w-12');
+        const titleText = alertBox.querySelector('h3');
+
+        if(current.wind_speed_10m > 15) {
+          alertBox.className = "bg-amber-50 border border-amber-200 p-6 rounded-3xl mb-8 flex items-start gap-4 shadow-sm";
+          iconDiv.className = "w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-xl flex-shrink-0 mt-1";
+          iconDiv.innerHTML = '<i class="fa-solid fa-wind"></i>';
+          titleText.className = "text-lg font-extrabold text-amber-800";
+          titleText.textContent = "Kuchli Shamol Xavfi";
+          alertDesc.className = "text-sm text-amber-600 font-medium mt-1";
+          alertDesc.textContent = "Hozir shamol tezligi yuqori. Ochiq maydonda kimyoviy preparatlar (dori) sepishni vaqtinchalik to'xtatish tavsiya etiladi.";
+        } else if(current.temperature_2m < 5) {
+          alertBox.className = "bg-rose-50 border border-rose-200 p-6 rounded-3xl mb-8 flex items-start gap-4 shadow-sm";
+          iconDiv.className = "w-12 h-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-xl flex-shrink-0 mt-1";
+          iconDiv.innerHTML = '<i class="fa-solid fa-snowflake"></i>';
+          titleText.className = "text-lg font-extrabold text-rose-800";
+          titleText.textContent = "Sovuq Urish Xavfi";
+          alertDesc.className = "text-sm text-rose-600 font-medium mt-1";
+          alertDesc.textContent = "Harorat juda past. Nihollar va gullayotgan ekinlarni sovuqdan asrash choralarini ko'ring.";
+        } else {
+          alertBox.className = "bg-emerald-50 border border-emerald-200 p-6 rounded-3xl mb-8 flex items-start gap-4 shadow-sm";
+          iconDiv.className = "w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl flex-shrink-0 mt-1";
+          iconDiv.innerHTML = '<i class="fa-solid fa-shield-check"></i>';
+          titleText.className = "text-lg font-extrabold text-emerald-800";
+          titleText.textContent = "Ekinlar uchun xavf yo'q";
+          alertDesc.className = "text-sm text-emerald-600 font-medium mt-1";
+          alertDesc.textContent = "Hozirgi harorat va namlik qishloq xo'jaligi ekinlari va dorilash ishlari uchun juda qulay.";
+        }
+
+        // Parse Daily
+        const daily = data.daily;
+        const grid = document.getElementById('forecast-grid');
+        grid.innerHTML = '';
+        
+        for(let i = 0; i < 7; i++) {
+          const date = new Date(daily.time[i]);
+          const dayName = date.toLocaleDateString('uz-UZ', { weekday: 'short' });
+          const maxT = Math.round(daily.temperature_2m_max[i]);
+          const minT = Math.round(daily.temperature_2m_min[i]);
+          
+          let icon = '<i class="fa-solid fa-sun text-amber-500"></i>';
+          if(daily.weather_code[i] >= 51) icon = '<i class="fa-solid fa-cloud-rain text-sky-500"></i>';
+          if(daily.weather_code[i] >= 71) icon = '<i class="fa-solid fa-snowflake text-sky-300"></i>';
+          
+          grid.innerHTML += `
+            <div class="bg-white p-4 rounded-2xl border border-stone-200 text-center shadow-sm flex flex-col items-center hover:border-brand-300 transition-colors">
+              <span class="text-xs font-bold text-slate-500 uppercase">${dayName}</span>
+              <div class="text-2xl my-2">${icon}</div>
+              <div class="flex items-center gap-2 text-sm font-bold text-slate-900">
+                <span>${maxT}°</span>
+                <span class="text-slate-400 font-medium text-xs">${minT}°</span>
+              </div>
+            </div>
+          `;
+        }
+
+        document.getElementById('weather-content').classList.remove('hidden');
+        document.getElementById('status-indicator').innerHTML = '<i class="fa-solid fa-check text-emerald-500 mr-1"></i> Yangilandi';
+      } catch (err) {
+        document.getElementById('status-indicator').innerHTML = '<i class="fa-solid fa-xmark text-rose-500 mr-1"></i> Xatolik';
+      }
+    }
+
+    // Run on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('agro_weather_region');
+      if (saved) {
+        const region = JSON.parse(saved);
+        document.getElementById('current-region-name').textContent = region.name;
+        document.getElementById('forecast-region').textContent = region.name;
+        document.getElementById('empty-state').classList.add('hidden');
+        fetchWeather(region);
+      } else {
+        document.getElementById('empty-state').classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
