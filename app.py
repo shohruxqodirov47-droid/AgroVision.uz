@@ -116,6 +116,11 @@ with app.app_context():
         db.session.rollback()
 
 import os
+from dotenv import load_dotenv
+
+# .env faylini o'qish (Agar bor bo'lsa)
+load_dotenv()
+
 # Configuration
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LQsFUocbJO3l7jgM5mwSkgep6uLFgdqK52SevHZhiSBw_FAKE")
 
