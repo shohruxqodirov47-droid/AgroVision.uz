@@ -28,8 +28,18 @@ app = Flask(__name__, template_folder="templates")
 CORS(app)
 
 # App Configuration
-app.config['SECRET_KEY'] = 'agrovision_super_secret_startup_key_2026'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///agrovision.db'
+app.config['SECRET_KEY'] = 'yashirin_kalit_uchun_biron_matn'
+
+# Baza sozlamalari: Vercel/Supabase uchun DATABASE_URL qidiradi, yo'q bo'lsa mahalliy SQLite ishlatadi
+database_url = os.environ.get("DATABASE_URL")
+if database_url:
+    # SQLAlchemy 'postgres://' emas, 'postgresql://' talab qiladi
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///agrovision.db'
+    
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize DB & Login
