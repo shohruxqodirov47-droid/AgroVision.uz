@@ -17,12 +17,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Ensure static/img exists and copy logo
-os.makedirs('static/img', exist_ok=True)
-try:
-    shutil.copy(r'C:\Users\GSMNURSERVICE\.gemini\antigravity\brain\57e7014c-e037-4cae-a54a-3ce962a06800\.user_uploaded\media_1786984109453.jpg', 'static/img/logo.jpg')
-except Exception as e:
-    print("Logo copy error:", e)
+# Logo is already in static/img
 
 app = Flask(__name__, template_folder="templates")
 CORS(app)
