@@ -6,7 +6,6 @@ import json
 import base64
 import random
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
-from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -20,7 +19,6 @@ load_dotenv()
 # Logo is already in static/img
 
 app = Flask(__name__, template_folder="templates")
-CORS(app)
 
 # App Configuration
 app.config['SECRET_KEY'] = 'yashirin_kalit_uchun_biron_matn'
