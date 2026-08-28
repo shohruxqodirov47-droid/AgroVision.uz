@@ -1,8 +1,7 @@
-const CACHE_NAME = 'agrovision-v1';
+const CACHE_NAME = 'agrovision-cache-v2';
 const urlsToCache = [
-  '/',
-  '/static/img/logo.jpg',
-  '/manifest.json'
+  '/static/manifest.json',
+  '/static/img/logo.jpg'
 ];
 
 self.addEventListener('install', event => {
@@ -16,10 +15,8 @@ self.addEventListener('install', event => {
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Keshlangan fayl bo'lsa uni beradi, bo'lmasa internetdan tortadi
-        return response || fetch(event.request);
-      })
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
   );
 });
