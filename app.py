@@ -38,7 +38,11 @@ if database_url:
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///agrovision.db'
+    # Vercel'da fayl yozish faqat /tmp papkasiga ruxsat etilgan
+    if os.environ.get("VERCEL"):
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/agrovision.db'
+    else:
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///agrovision.db'
     
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
