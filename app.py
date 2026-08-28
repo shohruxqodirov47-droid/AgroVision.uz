@@ -207,6 +207,8 @@ def serve_sw():
 @login_required
 def scanner():
     return render_template("scanner.html", user=current_user)
+
+@app.route("/pricing")
 def pricing():
     return render_template("pricing.html", user=current_user)
 
