@@ -276,94 +276,29 @@ def login():
             flash("Email yoki parol noto'g'ri.", "error")
     return render_template("login.html")
 
-# GOOGLE OAUTH SOZLAMALARI
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
-
-@app.route("/login/google")
-def login_google():
-    import requests
-    # Google OpenID konfiguratsiyasini olish
-    try:
-        google_provider_cfg = requests.get(GOOGLE_DISCOVERY_URL).json()
-        authorization_endpoint = google_provider_cfg["authorization_endpoint"]
+@app.route("/api/firebase-login", methods=["POST"])
+def firebase_login():
+    data = request.json
+    email = data.get('email')
+    name = data.get('name')
+    
+    if not email:
+        return jsonify({"success": False, "error": "Email is required"}), 400
         
-        from urllib.parse import urlencode
-        redirect_uri = url_for('auth_google_callback', _external=True)
-        # Agar qandaydir sabab bilan http bo'lib qolsa, https ga o'zgartirish (Vercel uchun qo'shimcha himoya)
-        if os.environ.get("VERCEL") and redirect_uri.startswith("http://"):
-            redirect_uri = redirect_uri.replace("http://", "https://", 1)
-            
-        request_uri = authorization_endpoint + "?" + urlencode({
-            "client_id": GOOGLE_CLIENT_ID,
-            "redirect_uri": redirect_uri,
-            "scope": "openid email profile",
-            "response_type": "code"
-        })
-        return redirect(request_uri)
-    except Exception as e:
-        flash("Google tizimiga ulanishda xatolik! Kodingizdagi Client ID va Secret ni tekshiring.", "error")
-        return redirect(url_for('login'))
-
-@app.route("/auth/google/callback")
-def auth_google_callback():
-    code = request.args.get("code")
-    import requests
-    try:
-        google_provider_cfg = requests.get(GOOGLE_DISCOVERY_URL).json()
-        token_endpoint = google_provider_cfg["token_endpoint"]
-        
-        token_url = token_endpoint
-        redirect_uri = url_for('auth_google_callback', _external=True)
-        if os.environ.get("VERCEL") and redirect_uri.startswith("http://"):
-            redirect_uri = redirect_uri.replace("http://", "https://", 1)
-            
-        token_response = requests.post(
-            token_url,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data={
-                "code": code,
-                "client_id": GOOGLE_CLIENT_ID,
-                "client_secret": GOOGLE_CLIENT_SECRET,
-                "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code",
-            },
+    user = User.query.filter_by(email=email).first()
+    
+    if not user:
+        # Create new user if doesn't exist
+        user = User(
+            name=name or email.split('@')[0],
+            email=email,
+            password_hash="" # Firebase users don't need a local password
         )
+        db.session.add(user)
+        db.session.commit()
         
-        # Token olingandan keyin foydalanuvchi ma'lumotlarini olish
-        import json
-        tokens = token_response.json()
-        userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
-        userinfo_response = requests.get(
-            userinfo_endpoint,
-            headers={"Authorization": f"Bearer {tokens['access_token']}"}
-        )
-        
-        user_info = userinfo_response.json()
-        google_id = user_info["sub"]
-        email = user_info["email"]
-        name = user_info.get("name", "Foydalanuvchi")
-        
-        # Foydalanuvchini bazadan izlash
-        user = User.query.filter_by(google_id=google_id).first()
-        if not user:
-            # Agar google_id bilan topilmasa, email orqali izlab ko'ramiz
-            user = User.query.filter_by(email=email).first()
-            if user:
-                user.google_id = google_id
-                db.session.commit()
-            else:
-                # Yangi foydalanuvchi yaratish
-                user = User(name=name, email=email, google_id=google_id)
-                db.session.add(user)
-                db.session.commit()
-                
-        login_user(user)
-        return redirect(url_for('index'))
-    except Exception as e:
-        flash("Google orqali kirish muvaffaqiyatsiz bo'ldi. API kalitlarni tekshiring.", "error")
-        return redirect(url_for('login'))
+    login_user(user)
+    return jsonify({"success": True})
 
 @app.route("/logout")
 @login_required
