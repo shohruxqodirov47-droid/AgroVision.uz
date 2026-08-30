@@ -92,7 +92,11 @@ def load_user(user_id):
 
 # Create Database tables automatically
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+    except Exception as e:
+        print(f"⚠️ Baza yaratishda xatolik (Balki DB ulanmagan): {e}")
+        
     # Safely migrate existing users to have is_admin column if it doesn't exist
     try:
         db.session.execute(text('ALTER TABLE user ADD COLUMN is_admin BOOLEAN DEFAULT 0'))
@@ -126,18 +130,22 @@ with app.app_context():
 # Configuration
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
-import google.genai as genai
-
 # Initialize Gemini API (xavfsiz)
 client = None
-if GEMINI_API_KEY:
-    try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        print("✅ Google Gemini API muvaffaqiyatli ulangan.")
-    except Exception as e:
-        print(f"⚠️ Gemini API ulanishda xatolik: {e}")
-else:
-    print("⚠️ GEMINI_API_KEY topilmadi. AI skaner ishlamaydi.")
+try:
+    import google.genai as genai
+    if GEMINI_API_KEY:
+        try:
+            client = genai.Client(api_key=GEMINI_API_KEY)
+            print("✅ Google Gemini API muvaffaqiyatli ulangan.")
+        except Exception as e:
+            print(f"⚠️ Gemini API ulanishda xatolik: {e}")
+    else:
+        print("⚠️ GEMINI_API_KEY topilmadi. AI skaner ishlamaydi.")
+except ImportError as ie:
+    print(f"⚠️ google.genai kutubxonasini yuklashda xatolik. Skaner ishlamaydi. Xato: {ie}")
+except Exception as e:
+    print(f"⚠️ Noma'lum xatolik google.genai da: {e}")
 
 SYSTEM_PROMPT = """
 Sen O'zbekiston sharoitini mukammal biladigan professional fitopatolog va agronom mutaxassisisan.
