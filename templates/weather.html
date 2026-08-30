@@ -416,5 +416,33 @@
       }
     });
   </script>
+  <!-- MOBILE BOTTOM NAVIGATION -->
+  {% if user and user.is_authenticated %}
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 z-[999] flex items-center justify-between px-2 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]" style="padding-bottom: env(safe-area-inset-bottom);">
+    <a href="{{ url_for('index') }}" class="flex flex-col items-center justify-center w-1/5 py-2 text-slate-400 hover:text-brand-500 {{ 'text-brand-500' if request.endpoint == 'index' else '' }}">
+      <i class="fa-solid fa-house text-xl mb-1"></i>
+      <span class="text-[10px] font-bold">Asosiy</span>
+    </a>
+    <a href="{{ url_for('scanner') }}" class="flex flex-col items-center justify-center w-1/5 py-2 text-slate-400 hover:text-brand-500 {{ 'text-brand-500' if request.endpoint == 'scanner' else '' }}">
+      <i class="fa-solid fa-microscope text-xl mb-1"></i>
+      <span class="text-[10px] font-bold">Skaner</span>
+    </a>
+    <a href="{{ url_for('chat') }}" class="flex flex-col items-center justify-center w-1/5 py-2 text-slate-400 hover:text-brand-500 relative">
+      <div class="absolute -top-6 w-14 h-14 rounded-full bg-gradient-to-tr from-brand-500 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/40 border-4 border-stone-50 transition-transform hover:scale-110">
+        <i class="fa-solid fa-robot text-2xl"></i>
+      </div>
+      <span class="text-[10px] font-bold mt-7 {{ 'text-brand-500' if request.endpoint == 'chat' else '' }}">Chat</span>
+    </a>
+    <a href="{{ url_for('market') }}" class="flex flex-col items-center justify-center w-1/5 py-2 text-slate-400 hover:text-brand-500 {{ 'text-brand-500' if request.endpoint == 'market' else '' }}">
+      <i class="fa-solid fa-chart-line text-xl mb-1"></i>
+      <span class="text-[10px] font-bold">Bozor</span>
+    </a>
+    <a href="{{ url_for('weather') }}" class="flex flex-col items-center justify-center w-1/5 py-2 text-slate-400 hover:text-brand-500 {{ 'text-brand-500' if request.endpoint == 'weather' else '' }}">
+      <i class="fa-solid fa-cloud-sun text-xl mb-1"></i>
+      <span class="text-[10px] font-bold">Ob-havo</span>
+    </a>
+  </nav>
+  <div class="md:hidden h-[80px] w-full"></div>
+  {% endif %}
 </body>
 </html>
