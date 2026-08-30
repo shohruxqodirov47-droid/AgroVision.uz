@@ -277,11 +277,9 @@
       <i class="fa-solid fa-microscope text-xl mb-1"></i>
       <span class="text-[10px] font-bold">Skaner</span>
     </a>
-    <a href="{{ url_for('chat') }}" class="flex flex-col items-center justify-center w-1/5 py-2 text-slate-400 hover:text-brand-500 relative">
-      <div class="absolute -top-6 w-14 h-14 rounded-full bg-gradient-to-tr from-brand-500 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/40 border-4 border-stone-50 transition-transform hover:scale-110">
-        <i class="fa-solid fa-robot text-2xl"></i>
-      </div>
-      <span class="text-[10px] font-bold mt-7 {{ 'text-brand-500' if request.endpoint == 'chat' else '' }}">Chat</span>
+    <a href="{{ url_for('chat') }}" class="flex flex-col items-center justify-center w-1/5 py-2 text-slate-400 hover:text-brand-500 {{ 'text-brand-500' if request.endpoint == 'chat' else '' }}">
+      <i class="fa-solid fa-robot text-xl mb-1"></i>
+      <span class="text-[10px] font-bold">Chat</span>
     </a>
     <a href="{{ url_for('market') }}" class="flex flex-col items-center justify-center w-1/5 py-2 text-slate-400 hover:text-brand-500 {{ 'text-brand-500' if request.endpoint == 'market' else '' }}">
       <i class="fa-solid fa-chart-line text-xl mb-1"></i>
