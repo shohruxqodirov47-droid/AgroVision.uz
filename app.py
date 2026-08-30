@@ -5,6 +5,7 @@ import re
 import json
 import base64
 import random
+from datetime import datetime, time
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
@@ -21,7 +22,7 @@ load_dotenv()
 app = Flask(__name__, template_folder="templates")
 
 # App Configuration
-app.config['SECRET_KEY'] = 'yashirin_kalit_uchun_biron_matn'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'yashirin_kalit_uchun_biron_matn')
 
 # Baza sozlamalari: Vercel/Supabase uchun DATABASE_URL qidiradi, yo'q bo'lsa mahalliy SQLite ishlatadi
 database_url = os.environ.get("DATABASE_URL")
@@ -45,7 +46,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-from datetime import datetime
 
 # User Model
 class User(UserMixin, db.Model):
@@ -122,20 +122,22 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
-import os
-from dotenv import load_dotenv
-
-# .env faylini o'qish (Agar bor bo'lsa)
-load_dotenv()
 
 # Configuration
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LQsFUocbJO3l7jgM5mwSkgep6uLFgdqK52SevHZhiSBw_FAKE")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 import google.genai as genai
 
-# Initialize Gemini API
-client = genai.Client(api_key=GEMINI_API_KEY)
-print("✅ Google Gemini API muvaffaqiyatli ulangan.")
+# Initialize Gemini API (xavfsiz)
+client = None
+if GEMINI_API_KEY:
+    try:
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        print("✅ Google Gemini API muvaffaqiyatli ulangan.")
+    except Exception as e:
+        print(f"⚠️ Gemini API ulanishda xatolik: {e}")
+else:
+    print("⚠️ GEMINI_API_KEY topilmadi. AI skaner ishlamaydi.")
 
 SYSTEM_PROMPT = """
 Sen O'zbekiston sharoitini mukammal biladigan professional fitopatolog va agronom mutaxassisisan.
@@ -156,7 +158,6 @@ Rasmni diqqat bilan tahlil qil va faqat quyidagi JSON formatida javob ber:
 MUHIM QOIDA: JSON formatini buzmaslik uchun javobingizdagi matnlar ichida HECH QACHON qo'shtirnoq (") belgisini ishlata ko'rmang! O'zbek tilidagi harflar (O', G') va tutuq belgisi uchun faqat yakkalik tirnoq (') ishlating! Javobing faqat toza JSON bo'lsin, hech qanday boshqa matn qo'shma.
 """
 
-from datetime import datetime, time
 
 def check_scan_limit(user):
     if user.subscription_tier in ['Premium', 'Business'] or user.id == 1:
@@ -550,7 +551,10 @@ def clear_chat():
 @app.route("/api/market/sync", methods=["POST"])
 @login_required
 def sync_market():
-    # Faqat adminlar narxni yangilashi mumkin (yoki test uchun hammaga ruxsat)
+    # Faqat adminlar narxni yangilashi mumkin
+    if current_user.id != 1:
+        return jsonify({"success": False, "error": "Ruxsat yo'q"}), 403
+        
     try:
         import anthropic
         import json

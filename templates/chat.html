@@ -104,7 +104,7 @@
                 <i class="fa-solid fa-robot text-sm"></i>
               </div>
               <div class="bg-white border border-stone-200 rounded-2xl rounded-tl-sm p-4 shadow-sm max-w-[85%] sm:max-w-[75%] markdown-body text-sm text-slate-700 font-medium">
-                {{ msg.content|safe }}
+                {{ msg.content }}
               </div>
             </div>
           {% endif %}
@@ -183,8 +183,8 @@
       const msgDiv = document.createElement('div');
       msgDiv.className = 'flex gap-4';
       
-      // Parse markdown to HTML
-      const htmlContent = marked.parse(text);
+      // Parse markdown to HTML (with fallback if marked library failed to load)
+      const htmlContent = (typeof marked !== 'undefined' && marked.parse) ? marked.parse(text) : text.replace(/\n/g, '<br>');
 
       msgDiv.innerHTML = `
         <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-500 to-emerald-400 flex-shrink-0 flex items-center justify-center text-white shadow-sm mt-1">

@@ -512,6 +512,9 @@
     const loadingOverlay = document.getElementById('loading-overlay');
     const resultsDashboard = document.getElementById('results-dashboard');
 
+    // Faqat login bo'lgan foydalanuvchilar uchun event listener'lar
+    if (dropZone && fileInput) {
+
     // Click dropzone to trigger input
     dropZone.addEventListener('click', (e) => {
       if (e.target.closest('button')) return;
@@ -546,6 +549,8 @@
       }
     });
 
+    } // end if (dropZone && fileInput)
+
     function handleFileSelect(file) {
       if (!file.type.startsWith('image/')) {
         alert("Iltimos, faqat rasm faylini yuklang!");
@@ -568,20 +573,22 @@
       if (event) event.stopPropagation();
       selectedFile = null;
       selectedFileHint = "";
-      fileInput.value = '';
-      imagePreview.src = '';
-      uploadPrompt.classList.remove('hidden');
-      imagePreviewContainer.classList.add('hidden');
+      if (fileInput) fileInput.value = '';
+      if (imagePreview) imagePreview.src = '';
+      if (uploadPrompt) uploadPrompt.classList.remove('hidden');
+      if (imagePreviewContainer) imagePreviewContainer.classList.add('hidden');
       disableAnalyzeButton();
-      resultsDashboard.classList.add('hidden');
+      if (resultsDashboard) resultsDashboard.classList.add('hidden');
     }
 
     function enableAnalyzeButton() {
+      if (!btnAnalyze) return;
       btnAnalyze.disabled = false;
       btnAnalyze.className = "w-full sm:w-auto px-10 py-4 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-base shadow-xl shadow-brand-500/30 transition-all flex items-center justify-center gap-3 mx-auto cursor-pointer hover:scale-105";
     }
 
     function disableAnalyzeButton() {
+      if (!btnAnalyze) return;
       btnAnalyze.disabled = true;
       btnAnalyze.className = "w-full sm:w-auto px-10 py-4 rounded-2xl bg-stone-200 text-stone-500 font-bold text-base transition-all flex items-center justify-center gap-3 mx-auto cursor-not-allowed";
     }
@@ -607,12 +614,12 @@
           handleFileSelect(file);
         })
         .catch(err => {
-          console.warn("Sample image fetch failed, using fallback base64", err);
+          console.warn("Sample image fetch failed, using fallback", err);
           // Set preview directly
-          imagePreview.src = imageUrl;
-          uploadPrompt.classList.add('hidden');
-          imagePreviewContainer.classList.remove('hidden');
-          fileInfo.textContent = `${type.toUpperCase()} barg namunasi (Tayyor fayl)`;
+          if (imagePreview) imagePreview.src = imageUrl;
+          if (uploadPrompt) uploadPrompt.classList.add('hidden');
+          if (imagePreviewContainer) imagePreviewContainer.classList.remove('hidden');
+          if (fileInfo) fileInfo.textContent = `${type.toUpperCase()} barg namunasi (Tayyor fayl)`;
           selectedFile = "SAMPLE_PRESENT";
           enableAnalyzeButton();
         });

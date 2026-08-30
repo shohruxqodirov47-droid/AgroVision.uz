@@ -104,7 +104,8 @@
       className: 'map-tiles'
     }).addTo(map);
 
-    document.querySelector('.map-tiles').style.filter = 'contrast(1.1) brightness(1.1)';
+    var mapTilesEl = document.querySelector('.map-tiles');
+    if (mapTilesEl) mapTilesEl.style.filter = 'contrast(1.1) brightness(1.1)';
 
     var mapData = {{ map_data | tojson | safe }};
     

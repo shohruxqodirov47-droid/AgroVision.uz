@@ -240,7 +240,7 @@
                 <i class="fa-solid fa-chart-line text-amber-500"></i> Tezkor Narxlar
               </h2>
               <div class="flex items-center gap-2">
-                {% if user.id == 1 %}
+                {% if user and user.is_authenticated and user.id == 1 %}
                 <button onclick="syncMarket()" id="btn-sync" class="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center text-sky-500 hover:bg-sky-100 transition-colors" title="Bozor narxlarini yangilash">
                   <i class="fa-solid fa-rotate"></i>
                 </button>

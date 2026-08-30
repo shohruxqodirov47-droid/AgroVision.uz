@@ -37,7 +37,7 @@
 <body class="bg-stone-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
   <!-- Region Search Modal -->
-  <div id="region-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+  <div id="region-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 sm:p-8 transform scale-95 transition-all" id="modal-content">
       <div class="flex justify-between items-start mb-6">
         <div>
@@ -195,6 +195,7 @@
 
     function openRegionModal() {
       modal.classList.remove('hidden');
+      modal.classList.add('flex');
       setTimeout(() => {
         document.getElementById('modal-content').classList.remove('scale-95');
         document.getElementById('modal-content').classList.add('scale-100');
@@ -207,6 +208,7 @@
       document.getElementById('modal-content').classList.add('scale-95');
       setTimeout(() => {
         modal.classList.add('hidden');
+        modal.classList.remove('flex');
       }, 200);
     }
 
