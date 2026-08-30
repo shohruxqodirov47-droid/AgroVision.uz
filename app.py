@@ -21,6 +21,10 @@ load_dotenv()
 
 app = Flask(__name__, template_folder="templates")
 
+# X-Forwarded-* sarlavhalarini to'g'ri o'qish uchun ProxyFix (Vercel uchun HTTPS)
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
 # App Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'yashirin_kalit_uchun_biron_matn')
 
@@ -88,7 +92,10 @@ class MarketPrice(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    try:
+        return User.query.get(int(user_id))
+    except Exception:
+        return None
 
 # Create Database tables automatically
 with app.app_context():
@@ -283,9 +290,14 @@ def login_google():
         authorization_endpoint = google_provider_cfg["authorization_endpoint"]
         
         from urllib.parse import urlencode
+        redirect_uri = url_for('auth_google_callback', _external=True)
+        # Agar qandaydir sabab bilan http bo'lib qolsa, https ga o'zgartirish (Vercel uchun qo'shimcha himoya)
+        if os.environ.get("VERCEL") and redirect_uri.startswith("http://"):
+            redirect_uri = redirect_uri.replace("http://", "https://", 1)
+            
         request_uri = authorization_endpoint + "?" + urlencode({
             "client_id": GOOGLE_CLIENT_ID,
-            "redirect_uri": request.url_root + "auth/google/callback",
+            "redirect_uri": redirect_uri,
             "scope": "openid email profile",
             "response_type": "code"
         })
@@ -303,6 +315,10 @@ def auth_google_callback():
         token_endpoint = google_provider_cfg["token_endpoint"]
         
         token_url = token_endpoint
+        redirect_uri = url_for('auth_google_callback', _external=True)
+        if os.environ.get("VERCEL") and redirect_uri.startswith("http://"):
+            redirect_uri = redirect_uri.replace("http://", "https://", 1)
+            
         token_response = requests.post(
             token_url,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -310,7 +326,7 @@ def auth_google_callback():
                 "code": code,
                 "client_id": GOOGLE_CLIENT_ID,
                 "client_secret": GOOGLE_CLIENT_SECRET,
-                "redirect_uri": request.url_root + "auth/google/callback",
+                "redirect_uri": redirect_uri,
                 "grant_type": "authorization_code",
             },
         )
@@ -765,6 +781,16 @@ def analyze():
             "success": False,
             "error": f"Tahlil jarayonida kutilmagan xatolik yuz berdi: {str(e)}"
         }), 500
+
+@app.errorhandler(500)
+def internal_error(error):
+    import traceback
+    return f"<h1>Server Xatoligi (500)</h1><pre>{traceback.format_exc()}</pre>", 500
+
+@app.errorhandler(Exception)
+def unhandled_exception(e):
+    import traceback
+    return f"<h1>Kutilmagan Xatolik</h1><pre>{traceback.format_exc()}</pre>", 500
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
