@@ -537,7 +537,7 @@ def api_chat():
         # Add system prompt as the first message or use system instructions
         try:
             response = client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-3.5-flash",
                 contents=contents,
                 config=genai.types.GenerateContentConfig(
                     system_instruction=CHAT_SYSTEM_PROMPT,
@@ -601,7 +601,7 @@ Faqat valid JSON array qaytar, boshqa hech qanday tekst yozma! Format namunasi:
 ]"""
 
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-3.5-flash",
             contents=prompt,
         )
         
@@ -709,7 +709,7 @@ def analyze():
             from google.genai import types
             
             response = client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-3.5-flash',
                 contents=[img, SYSTEM_PROMPT],
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json"
