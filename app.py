@@ -516,12 +516,9 @@ def api_chat():
         if not message:
             return jsonify({"success": False, "error": "Bo'sh xabar"}), 400
             
-        import anthropic
-        
-        ant_client = anthropic.Anthropic(
-            api_key=os.environ.get("ANTHROPIC_API_KEY", "")
-        )
-        
+        if not client:
+            return jsonify({"success": False, "error": "Gemini API kaliti topilmadi"}), 500
+            
         # Save User Message to DB
         new_user_msg = ChatMessage(user_id=current_user.id, role="user", content=message)
         db.session.add(new_user_msg)
@@ -530,23 +527,27 @@ def api_chat():
         history_records = ChatMessage.query.filter_by(user_id=current_user.id).order_by(ChatMessage.timestamp.desc()).limit(20).all()
         history_records.reverse()
         
-        # Build API messages array
-        api_messages = []
+        # Build API messages array (for Gemini)
+        contents = []
         for msg in history_records:
-            if msg.content.strip(): # Skip empty just in case
-                api_messages.append({"role": msg.role, "content": msg.content})
+            if msg.content.strip(): # Skip empty
+                role = "user" if msg.role == "user" else "model"
+                contents.append({"role": role, "parts": [{"text": msg.content}]})
         
-        response = ant_client.messages.create(
-            model="claude-sonnet-5",
-            max_tokens=1000,
-            system=CHAT_SYSTEM_PROMPT,
-            messages=api_messages
-        )
-        
-        response_text = ""
-        for block in response.content:
-            if getattr(block, 'type', '') == 'text':
-                response_text += block.text
+        # Add system prompt as the first message or use system instructions
+        try:
+            response = client.models.generate_content(
+                model="gemini-1.5-flash",
+                contents=contents,
+                config=genai.types.GenerateContentConfig(
+                    system_instruction=CHAT_SYSTEM_PROMPT,
+                    temperature=0.7
+                )
+            )
+            response_text = response.text
+        except Exception as api_e:
+            print(f"Gemini API Error in chat: {api_e}")
+            return jsonify({"success": False, "error": f"AI xatosi: {str(api_e)}"}), 500
                 
         # Save AI Response to DB
         new_ai_msg = ChatMessage(user_id=current_user.id, role="assistant", content=response_text)
@@ -580,11 +581,8 @@ def sync_market():
         return jsonify({"success": False, "error": "Ruxsat yo'q"}), 403
         
     try:
-        import anthropic
-        import json
-        ant_client = anthropic.Anthropic(
-            api_key=os.environ.get("ANTHROPIC_API_KEY", "")
-        )
+        if not client:
+            return jsonify({"success": False, "error": "Gemini API kaliti topilmadi"}), 500
         
         prompt = """Sen O'zbekiston qishloq xo'jaligi bozorlari ekspertisan. 
 Sening vazifang - bozordagi bugungi O'RTACHA ULGURJI narxlarni (so'mda) taxmin qilib, JSON formatida qaytarish.
@@ -602,19 +600,14 @@ Faqat valid JSON array qaytar, boshqa hech qanday tekst yozma! Format namunasi:
   {"product_name": "Pomidor", "emoji": "🍅", "price": 8500, "trend_percent": 2.5, "is_up": true}
 ]"""
 
-        response = ant_client.messages.create(
-            model="claude-sonnet-5",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}]
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt,
         )
         
-        json_str = ""
-        for block in response.content:
-            if getattr(block, 'type', '') == 'text':
-                json_str += block.text
-                
+        json_str = response.text.strip()
+        
         # Tozalash
-        json_str = json_str.strip()
         if json_str.startswith('```json'):
             json_str = json_str.split('```json')[1].split('```')[0].strip()
         elif json_str.startswith('```'):
