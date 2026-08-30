@@ -415,12 +415,57 @@ def radar():
             
     return render_template("radar.html", user=current_user, map_data=map_data)
 
-@app.route("/admin")
+@app.route("/admin", methods=["GET", "POST"])
 @login_required
 def admin_panel():
     if current_user.id != 1:
         flash("Sizda admin huquqlari yo'q!", "error")
         return redirect(url_for('index'))
+        
+    if not session.get('admin_logged_in'):
+        from flask import render_template_string
+        if request.method == "POST":
+            pwd = request.form.get("admin_password")
+            if pwd == "admin2":
+                session['admin_logged_in'] = True
+                return redirect(url_for('admin_panel'))
+            else:
+                flash("Xato parol kiritildi!", "error")
+                
+        return render_template_string('''
+        <!DOCTYPE html>
+        <html lang="uz">
+        <head>
+            <title>Admin Himoyasi</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
+            <div class="bg-white p-8 rounded-3xl shadow-2xl w-[400px] max-w-full">
+                <div class="flex justify-center mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg transform rotate-3">
+                        🛡️
+                    </div>
+                </div>
+                <h2 class="text-2xl font-extrabold mb-2 text-center text-slate-800">Admin Panel</h2>
+                <p class="text-center text-slate-500 mb-6 text-sm">Davom etish uchun maxfiy parolni kiriting</p>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="bg-rose-50 border border-rose-200 text-rose-600 p-3 rounded-xl mb-6 text-sm text-center font-semibold">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form method="POST" class="flex flex-col gap-4">
+                    <input type="password" name="admin_password" placeholder="Parolni kiriting..." class="bg-stone-50 border border-stone-200 p-3.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-center font-mono text-lg tracking-widest" autofocus required>
+                    <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl w-full transition-colors shadow-lg">Tasdiqlash</button>
+                    <a href="{{ url_for('index') }}" class="text-center text-slate-400 hover:text-slate-600 text-sm mt-2 font-medium transition-colors">Ortga qaytish</a>
+                </form>
+            </div>
+        </body>
+        </html>
+        ''')
         
     total_users = User.query.count()
     total_scans = ScanHistory.query.count()
