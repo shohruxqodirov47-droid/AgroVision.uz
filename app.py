@@ -276,29 +276,109 @@ def login():
             flash("Email yoki parol noto'g'ri.", "error")
     return render_template("login.html")
 
-@app.route("/api/firebase-login", methods=["POST"])
-def firebase_login():
-    data = request.json
-    email = data.get('email')
-    name = data.get('name')
-    
-    if not email:
-        return jsonify({"success": False, "error": "Email is required"}), 400
+# GOOGLE OAUTH SOZLAMALARI
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
+
+@app.route("/login/google")
+def login_google():
+    import requests
+    # Google OpenID konfiguratsiyasini olish
+    try:
+        google_provider_cfg = requests.get(GOOGLE_DISCOVERY_URL).json()
+        authorization_endpoint = google_provider_cfg["authorization_endpoint"]
         
-    user = User.query.filter_by(email=email).first()
-    
-    if not user:
-        # Create new user if doesn't exist
-        user = User(
-            name=name or email.split('@')[0],
-            email=email,
-            password_hash="" # Firebase users don't need a local password
-        )
-        db.session.add(user)
-        db.session.commit()
+        from urllib.parse import urlencode
+        redirect_uri = url_for('auth_google_callback', _external=True)
+        # Agar qandaydir sabab bilan http bo'lib qolsa, https ga o'zgartirish (Vercel uchun qo'shimcha himoya)
+        if os.environ.get("VERCEL") and redirect_uri.startswith("http://"):
+            redirect_uri = redirect_uri.replace("http://", "https://", 1)
+            
+        request_uri = authorization_endpoint + "?" + urlencode({
+            "client_id": GOOGLE_CLIENT_ID,
+            "redirect_uri": redirect_uri,
+            "scope": "openid email profile",
+            "response_type": "code",
+            "access_type": "offline",
+            "prompt": "consent"
+        })
+        return redirect(request_uri)
+    except Exception as e:
+        flash(f"Google bilan bog'lanishda xatolik: {e}", "error")
+        return redirect(url_for('login'))
+
+@app.route("/login/google/callback")
+def auth_google_callback():
+    code = request.args.get("code")
+    if not code:
+        flash("Google orqali kirish bekor qilindi.", "error")
+        return redirect(url_for('login'))
         
-    login_user(user)
-    return jsonify({"success": True})
+    import requests
+    try:
+        # Tokenni olish
+        google_provider_cfg = requests.get(GOOGLE_DISCOVERY_URL).json()
+        token_endpoint = google_provider_cfg["token_endpoint"]
+        
+        redirect_uri = url_for('auth_google_callback', _external=True)
+        if os.environ.get("VERCEL") and redirect_uri.startswith("http://"):
+            redirect_uri = redirect_uri.replace("http://", "https://", 1)
+            
+        token_url = token_endpoint
+        token_data = {
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        }
+        
+        token_response = requests.post(token_url, data=token_data).json()
+        
+        if "error" in token_response:
+            flash(f"Google Token xatosi: {token_response.get('error_description', 'Noma\\'lum xato')}", "error")
+            return redirect(url_for('login'))
+            
+        access_token = token_response.get("access_token")
+        
+        # Foydalanuvchi ma'lumotlarini olish (JWT o'rniga userinfo API dan foydalanamiz, qo'shimcha kutubxona kerak emas)
+        user_info_response = requests.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        ).json()
+        
+        email = user_info_response.get("email")
+        name = user_info_response.get("name")
+        google_id = user_info_response.get("id")
+        
+        if not email:
+            flash("Google dan email olinmadi.", "error")
+            return redirect(url_for('login'))
+            
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            # Yangi foydalanuvchi yaratish
+            user = User(
+                name=name or email.split('@')[0],
+                email=email,
+                password_hash="", # Parolsiz
+                google_id=google_id
+            )
+            db.session.add(user)
+            db.session.commit()
+        elif not user.google_id:
+            # Mavjud foydalanuvchiga google_id biriktirish
+            user.google_id = google_id
+            db.session.commit()
+            
+        login_user(user)
+        return redirect(url_for('index'))
+        
+    except Exception as e:
+        flash(f"Kirishda xatolik yuz berdi: {e}", "error")
+        return redirect(url_for('login'))
 
 @app.route("/logout")
 @login_required
