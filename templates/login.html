@@ -94,10 +94,10 @@
           <div class="flex-grow border-t border-stone-200"></div>
         </div>
 
-        <button type="button" id="google-login-btn" class="w-full py-3.5 flex items-center justify-center gap-2 rounded-xl bg-white border border-stone-200 hover:bg-stone-50 text-slate-700 font-bold text-base shadow-sm transition-all">
+        <a href="{{ url_for('login_google') }}" class="w-full py-3.5 flex items-center justify-center gap-2 rounded-xl bg-white border border-stone-200 hover:bg-stone-50 text-slate-700 font-bold text-base shadow-sm transition-all">
           <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="w-5 h-5">
           Google orqali davom etish
-        </button>
+        </a>
       </form>
 
       <div class="mt-6 text-center text-sm font-medium text-slate-500">
@@ -106,54 +106,5 @@
       </div>
     </div>
   </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDWryxk_S8vE1YbRNC4GN_V02SEP0hVtic",
-      authDomain: "agrovision-f5a3b.firebaseapp.com",
-      projectId: "agrovision-f5a3b",
-      storageBucket: "agrovision-f5a3b.firebasestorage.app",
-      messagingSenderId: "280783698617",
-      appId: "1:280783698617:web:b3e8b0a587293b89c53968",
-      measurementId: "G-6KFY5MYBTN"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-
-    document.getElementById('google-login-btn').addEventListener('click', () => {
-      signInWithPopup(auth, provider)
-        .then((result) => {
-          const user = result.user;
-          return fetch('/api/firebase-login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              email: user.email,
-              name: user.displayName || user.email.split('@')[0],
-              uid: user.uid
-            })
-          });
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            window.location.href = "/";
-          } else {
-            alert("Xatolik: " + data.error);
-          }
-        })
-        .catch((error) => {
-          console.error("Firebase Login Error:", error);
-          alert("Kirishda xatolik yuz berdi. Sahifani yangilab qayta urinib ko'ring.");
-        });
-    });
-  </script>
 </body>
 </html>
